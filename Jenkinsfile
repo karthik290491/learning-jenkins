@@ -3,25 +3,41 @@ pipeline{
   agent any
 
   stages{
-
-    stage('sonar quality status'){
-
-      agent{
-
-        docker {
-          image 'maven'
-        }
-      }
+    stage('git checkout'){
       steps{
-
-        script{
-
-          withSonarQubeEnv(credentialsId: 'sonar-token'){
+      }
+    }
+  }
+  stage ('unit testing') {
     
-           sh 'mvn clean package sonar:sonar'
-         }
-       }
-     }
-   } 
- } 
+    steps {
+      sh 'mvn test'
+    }
+  }
+  stage ('Intergration testing') {
+    steps {
+      sh 'mvn verify - oski unit test'
+    }
+  }
+  stage ('maven build') {
+    steps {
+      sh 'mvn clean install'
+    }
+  }
+  stage ('static code analysis') {
+    steps {
+      scripts {
+        withSonarQubeEnv(credentialsId: 'sonar-token') {
+         sh 'mvn clean package sonar:sonar'
+}
+      }
+    }
+  }
+  stage ('qulity gate status') {
+    steps{
+      scripts{
+        waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+      }
+    }
+  }
 } 
